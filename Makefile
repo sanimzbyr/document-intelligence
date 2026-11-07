@@ -1,10 +1,11 @@
 .PHONY: setup dev test migrate worker eval docker-up docker-down clean
 
-PYTHON ?= ./backend/venv/bin/python
-PIP ?= ./backend/venv/bin/pip
-UVICORN ?= ./backend/venv/bin/uvicorn
-CELERY ?= ./backend/venv/bin/celery
-PYTEST ?= ./backend/venv/bin/pytest
+ROOT_DIR := $(shell pwd)
+PYTHON ?= $(ROOT_DIR)/backend/venv/bin/python
+PIP ?= $(ROOT_DIR)/backend/venv/bin/pip
+UVICORN ?= $(ROOT_DIR)/backend/venv/bin/uvicorn
+CELERY ?= $(ROOT_DIR)/backend/venv/bin/celery
+PYTEST ?= $(ROOT_DIR)/backend/venv/bin/pytest
 
 setup:
 	@echo "Setting up environment..."
