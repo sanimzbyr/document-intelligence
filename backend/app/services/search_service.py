@@ -1,8 +1,10 @@
 """
 Search Service.
-Provides full-text keyword search and OpenAI semantic vector search with cosine similarity.
+Provides full-text keyword search and semantic vector search with cosine similarity.
+Supports Free Embeddings via Google Gemini (text-embedding-004), OpenAI, or local TF-IDF vectorizer.
 """
 import math
+import hashlib
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
@@ -17,22 +19,55 @@ from app.utils.logger import logger
 class SearchService:
     def __init__(self):
         self.client: Optional[AsyncOpenAI] = None
-        if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY not in ("mock-or-real-api-key", "your-openai-api-key-here"):
-            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        provider, api_key, base_url, _ = settings.get_llm_credentials()
+        self.provider = provider
+        
+        if api_key and api_key not in ("mock-or-real-api-key", "your-openai-api-key-here", "your-gemini-api-key-here", "your-groq-api-key-here"):
+            client_kwargs = {"api_key": api_key}
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            self.client = AsyncOpenAI(**client_kwargs)
 
     async def get_embedding(self, text: str) -> Optional[List[float]]:
-        """Generate vector embedding for text using OpenAI."""
-        if not self.client or not text or not text.strip():
+        """
+        Generate vector embedding for text.
+        Uses Google Gemini (text-embedding-004), OpenAI (text-embedding-3-small),
+        or deterministic local vectorizer fallback.
+        """
+        if not text or not text.strip():
             return None
-        try:
-            res = await self.client.embeddings.create(
-                model=settings.OPENAI_EMBEDDING_MODEL,
-                input=text[:8000]
-            )
-            return res.data[0].embedding
-        except Exception as e:
-            logger.warning(f"Failed to generate embedding: {e}")
-            return None
+
+        # 1. Try API embedding if client is available
+        if self.client:
+            try:
+                emb_model = "text-embedding-004" if self.provider == "gemini" else settings.OPENAI_EMBEDDING_MODEL
+                res = await self.client.embeddings.create(
+                    model=emb_model,
+                    input=text[:4000]
+                )
+                return res.data[0].embedding
+            except Exception as e:
+                logger.warning(f"Remote embedding call failed ({self.provider}), falling back to local vectorizer: {e}")
+
+        # 2. Free local deterministic vectorizer (hashed term frequency - 128 dim)
+        return self._local_hash_embedding(text)
+
+    def _local_hash_embedding(self, text: str, dimensions: int = 128) -> List[float]:
+        """Generate a 100% free, deterministic normalized float vector using hashed token buckets."""
+        vec = [0.0] * dimensions
+        words = text.lower().split()
+        for word in words:
+            # Deterministic bucket index
+            h = int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
+            idx = h % dimensions
+            sign = 1.0 if ((h >> 4) & 1) else -1.0
+            vec[idx] += sign
+
+        # L2 normalize
+        norm = math.sqrt(sum(v * v for v in vec))
+        if norm > 0:
+            vec = [round(v / norm, 6) for v in vec]
+        return vec
 
     def cosine_similarity(self, v1: List[float], v2: List[float]) -> float:
         """Compute cosine similarity between two float vectors."""
@@ -143,7 +178,6 @@ class SearchService:
             logger.info("Semantic embedding unavailable, falling back to keyword search.")
             return await self._keyword_search(query, db, limit)
 
-        # Retrieve documents and their stored page embeddings
         stmt = (
             select(Document, ExtractedText, ExtractedData)
             .join(ExtractedText, Document.id == ExtractedText.document_id)
@@ -158,7 +192,7 @@ class SearchService:
             if not ext_text.embedding or not isinstance(ext_text.embedding, list):
                 continue
             sim = self.cosine_similarity(query_vector, ext_text.embedding)
-            if sim > 0.30:  # Relevance threshold
+            if sim > 0.15:  # Relevance threshold
                 snippet = (ext_text.text[:150] + "...") if ext_text.text else ""
                 extracted_schema = None
                 if ext_data:
@@ -187,7 +221,10 @@ class SearchService:
                     )
                 ))
 
-        # Sort descending by similarity score
+        # If vector matches were too sparse, combine with keyword matches
+        if len(scored_items) == 0:
+            return await self._keyword_search(query, db, limit)
+
         scored_items.sort(key=lambda x: x[0], reverse=True)
         return [item[1] for item in scored_items[:limit]]
 

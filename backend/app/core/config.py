@@ -1,8 +1,9 @@
 """
 Application configuration using Pydantic Settings.
 Loads from environment variables and .env file.
+Supports Free LLM Providers: Google Gemini, Groq, OpenRouter, Ollama, and OpenAI.
 """
-from typing import List, Union
+from typing import List, Union, Tuple, Optional
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
@@ -31,8 +32,17 @@ class Settings(BaseSettings):
     STORAGE_DIR: str = "./storage"
     MAX_UPLOAD_SIZE_MB: int = 50
     
-    # AI / LLM Configuration
+    # LLM / AI Configuration (Supports Free Tiers: Google Gemini, Groq, OpenRouter, Ollama)
+    LLM_PROVIDER: str = "gemini"  # "gemini" (Free), "groq" (Free), "openrouter" (Free), "ollama" (Local Free), "openai"
+    LLM_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    
+    LLM_MODEL: str = ""
+    LLM_BASE_URL: str = ""
+    
+    # Default fallbacks
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     
@@ -63,6 +73,55 @@ class Settings(BaseSettings):
             "http://localhost:3000",
             "http://127.0.0.1:3000"
         ]
+
+    def get_llm_credentials(self) -> Tuple[str, str, Optional[str], str]:
+        """
+        Resolve LLM credentials and endpoints.
+        Returns: (provider, api_key, base_url, model)
+        """
+        provider = (self.LLM_PROVIDER or "gemini").lower()
+        api_key = self.LLM_API_KEY
+
+        # Check provider-specific keys if general key not specified
+        if not api_key:
+            if provider == "gemini" and self.GEMINI_API_KEY:
+                api_key = self.GEMINI_API_KEY
+            elif provider == "groq" and self.GROQ_API_KEY:
+                api_key = self.GROQ_API_KEY
+            elif provider == "openai" and self.OPENAI_API_KEY:
+                api_key = self.OPENAI_API_KEY
+            elif self.GEMINI_API_KEY:
+                provider = "gemini"
+                api_key = self.GEMINI_API_KEY
+            elif self.GROQ_API_KEY:
+                provider = "groq"
+                api_key = self.GROQ_API_KEY
+            elif self.OPENAI_API_KEY:
+                provider = "openai"
+                api_key = self.OPENAI_API_KEY
+
+        base_url = self.LLM_BASE_URL
+        model = self.LLM_MODEL
+
+        # Configure defaults for free providers
+        if provider == "gemini":
+            base_url = base_url or "https://generativelanguage.googleapis.com/v1beta/openai/"
+            model = model or "gemini-1.5-flash"
+        elif provider == "groq":
+            base_url = base_url or "https://api.groq.com/openai/v1"
+            model = model or "llama-3.3-70b-versatile"
+        elif provider == "openrouter":
+            base_url = base_url or "https://openrouter.ai/api/v1"
+            model = model or "meta-llama/llama-3.3-70b-instruct:free"
+        elif provider == "ollama":
+            base_url = base_url or "http://localhost:11434/v1"
+            model = model or "llama3.2"
+            api_key = api_key or "ollama"
+        elif provider == "openai":
+            base_url = base_url or None
+            model = model or "gpt-4o"
+
+        return provider, api_key, base_url, model
 
     model_config = SettingsConfigDict(
         env_file=".env",

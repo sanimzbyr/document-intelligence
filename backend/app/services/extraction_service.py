@@ -1,6 +1,7 @@
 """
 AI Information Extraction Service.
-Extracts structured invoice JSON using OpenAI API with fallback deterministic parsing.
+Extracts structured invoice JSON using Free LLM APIs (Google Gemini, Groq, OpenRouter, Ollama)
+or OpenAI, with fallback deterministic parsing.
 Adheres strictly to the rule: Never hallucinate or invent missing fields.
 """
 import os
@@ -18,8 +19,18 @@ class ExtractionService:
     def __init__(self):
         self.prompt_template = self._load_prompt()
         self.client: Optional[AsyncOpenAI] = None
-        if settings.OPENAI_API_KEY and settings.OPENAI_API_KEY not in ("mock-or-real-api-key", "your-openai-api-key-here"):
-            self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        provider, api_key, base_url, model = settings.get_llm_credentials()
+        self.provider = provider
+        self.model = model
+        
+        # Valid active key check
+        if api_key and api_key not in ("mock-or-real-api-key", "your-openai-api-key-here", "your-gemini-api-key-here", "your-groq-api-key-here"):
+            client_kwargs = {"api_key": api_key}
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            self.client = AsyncOpenAI(**client_kwargs)
+            logger.info(f"Initialized LLM client for provider: {self.provider} (model: {self.model})")
 
     def _load_prompt(self) -> str:
         prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "extraction_prompt.txt")
@@ -40,16 +51,16 @@ class ExtractionService:
                 notes="Document contained no extractable text."
             )
 
-        max_chars = 15000
+        max_chars = 25000
         analysis_text = text[:max_chars] if len(text) > max_chars else text
 
         if self.client:
             prompt = self.prompt_template.replace("{document_text}", analysis_text)
             for attempt in range(1, 4):
                 try:
-                    response = await self.client.chat.completions.create(
-                        model=settings.OPENAI_MODEL,
-                        messages=[
+                    kwargs = {
+                        "model": self.model,
+                        "messages": [
                             {
                                 "role": "system",
                                 "content": "You are a specialized financial information extraction system. Return strictly valid JSON adhering to the user's schema."
@@ -59,18 +70,29 @@ class ExtractionService:
                                 "content": prompt
                             }
                         ],
-                        response_format={"type": "json_object"},
-                        temperature=0.0
-                    )
+                        "temperature": 0.0
+                    }
+                    # Include json response format where supported
+                    if self.provider in ("openai", "groq", "gemini"):
+                        kwargs["response_format"] = {"type": "json_object"}
+
+                    response = await self.client.chat.completions.create(**kwargs)
                     content = response.choices[0].message.content
+                    
+                    # Clean markdown code block fences if returned by model
+                    if "```json" in content:
+                        content = content.split("```json")[1].split("```")[0].strip()
+                    elif "```" in content:
+                        content = content.split("```")[1].split("```")[0].strip()
+
                     data = json.loads(content)
                     return self._clean_and_validate(data, raw_response=content)
                 except Exception as e:
-                    logger.warning(f"OpenAI extraction attempt {attempt} failed: {e}")
+                    logger.warning(f"LLM extraction attempt {attempt} failed ({self.provider}): {e}")
                     if attempt < 3:
                         await asyncio.sleep(2 ** attempt)
                     else:
-                        logger.error(f"All OpenAI extraction attempts failed, falling back to heuristic extraction: {e}")
+                        logger.error(f"All LLM extraction attempts failed, falling back to heuristic extraction: {e}")
 
         # Fallback heuristic / deterministic extractor
         return self._heuristic_fallback_extraction(text)
@@ -91,7 +113,7 @@ class ExtractionService:
 
         confidence = self._safe_float(data.get("confidence"))
         if confidence is None or confidence < 0.0 or confidence > 1.0:
-            confidence = 0.85
+            confidence = 0.90
 
         return ExtractedInvoiceData(
             invoice_number=str(data["invoice_number"]).strip() if data.get("invoice_number") else None,
@@ -104,17 +126,17 @@ class ExtractionService:
             currency=str(data["currency"]).strip().upper() if data.get("currency") else None,
             line_items=line_items,
             confidence=confidence,
-            notes=data.get("notes") or ("Extracted with LLM structured output." if raw_response else None)
+            notes=data.get("notes") or (f"Extracted via {self.provider} ({self.model})." if raw_response else None)
         )
 
     def _heuristic_fallback_extraction(self, text: str) -> ExtractedInvoiceData:
         """
         Deterministic regex and pattern based extraction.
-        Ensures system functions reliably even without an active OpenAI API key.
+        Ensures system functions reliably even without an active API key.
         """
         lines = [line.strip() for line in text.split("\n") if line.strip()]
         
-        # 1. Invoice Number (match explicit labels with word boundaries or tabular header)
+        # 1. Invoice Number (match explicit labels with word boundaries)
         invoice_number = None
         inv_patterns = [
             r"\b(?:invoice\s*(?:no|number|num)\.?|invoice\s*#|inv\s*#)\s*[:.\s-]*([A-Za-z0-9-_/]+)",
@@ -136,45 +158,6 @@ class ExtractionService:
                 candidate = tab_match.group(1).strip()
                 if candidate.lower() not in ("supplier", "date", "customer"):
                     invoice_number = candidate
-
-        # Tabular extraction for totals & fields if Excel/CSV table detected
-        if "Invoice Number" in text or "invoice_number" in text:
-            for line in lines:
-                # Order A: Invoice Number  Supplier  Invoice Date  Customer  Subtotal  Tax  Total Amount  Currency
-                row_match_a = re.search(r"\b(INV-[A-Za-z0-9-_/]+)\s+(.*?)\s+([0-9]{4}-[0-9]{2}-[0-9]{2})\s+(.*?)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([A-Z]{3})", line)
-                if row_match_a:
-                    invoice_number = row_match_a.group(1)
-                    supplier_name = row_match_a.group(2).strip()
-                    invoice_date = row_match_a.group(3)
-                    customer_name = row_match_a.group(4).strip()
-                    subtotal = self._safe_float(row_match_a.group(5))
-                    tax = self._safe_float(row_match_a.group(6))
-                    total = self._safe_float(row_match_a.group(7))
-                    currency = row_match_a.group(8)
-                    break
-                # Order B: invoice_number supplier_name invoice_date customer_name subtotal tax total currency
-                row_match_b = re.search(r"\b(INV-[A-Za-z0-9-_/]+)\s+(.*?)\s+([0-9]{4}-[0-9]{2}-[0-9]{2})\s+(.*?)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([A-Z]{3})", line)
-                # Order C: invoice_number, date, supplier...
-                parts = [p.strip() for p in re.split(r"\s{2,}|\t|,", line) if p.strip()]
-                if len(parts) >= 6 and any(p.startswith("INV-") for p in parts):
-                    for p in parts:
-                        if p.startswith("INV-"):
-                            invoice_number = p
-                            break
-                    for p in parts:
-                        if re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", p):
-                            invoice_date = p
-                            break
-                    num_parts = [self._safe_float(p) for p in parts if re.match(r"^[0-9.]+$", p)]
-                    num_parts = [n for n in num_parts if n is not None]
-                    if len(num_parts) >= 3:
-                        subtotal = num_parts[0]
-                        tax = num_parts[1]
-                        total = num_parts[2]
-                    for p in parts:
-                        if p in ("USD", "EUR", "GBP"):
-                            currency = p
-                            break
 
         # 2. Invoice Date
         date_match = re.search(
@@ -222,6 +205,41 @@ class ExtractionService:
         tot_match = re.search(r"\b(?:grand\s*total|total\s*amount|total|received|amount\s*paid)\s*[:.\s-]*[$€£]?\s*([0-9,]+\.[0-9]{2})", text, re.IGNORECASE)
         if tot_match:
             total = self._safe_float(tot_match.group(1).replace(",", ""))
+
+        # Tabular extraction for totals & fields if Excel/CSV table detected
+        if "Invoice Number" in text or "invoice_number" in text:
+            for line in lines:
+                row_match_a = re.search(r"\b(INV-[A-Za-z0-9-_/]+)\s+(.*?)\s+([0-9]{4}-[0-9]{2}-[0-9]{2})\s+(.*?)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([A-Z]{3})", line)
+                if row_match_a:
+                    invoice_number = row_match_a.group(1)
+                    supplier_name = row_match_a.group(2).strip()
+                    invoice_date = row_match_a.group(3)
+                    customer_name = row_match_a.group(4).strip()
+                    subtotal = self._safe_float(row_match_a.group(5))
+                    tax = self._safe_float(row_match_a.group(6))
+                    total = self._safe_float(row_match_a.group(7))
+                    currency = row_match_a.group(8)
+                    break
+                parts = [p.strip() for p in re.split(r"\s{2,}|\t|,", line) if p.strip()]
+                if len(parts) >= 6 and any(p.startswith("INV-") for p in parts):
+                    for p in parts:
+                        if p.startswith("INV-"):
+                            invoice_number = p
+                            break
+                    for p in parts:
+                        if re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", p):
+                            invoice_date = p
+                            break
+                    num_parts = [self._safe_float(p) for p in parts if re.match(r"^[0-9.]+$", p)]
+                    num_parts = [n for n in num_parts if n is not None]
+                    if len(num_parts) >= 3:
+                        subtotal = num_parts[0]
+                        tax = num_parts[1]
+                        total = num_parts[2]
+                    for p in parts:
+                        if p in ("USD", "EUR", "GBP"):
+                            currency = p
+                            break
 
         # 7. Line items heuristic
         line_items = []
