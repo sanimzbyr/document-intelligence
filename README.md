@@ -64,7 +64,7 @@ All 9 required deliverables are organized and documented within this repository:
 | **5** | **Multi-Format Pipelines** | [`backend/app/pipelines/`](./backend/app/pipelines/) | PDF (`pdfplumber`/OCR), Excel, CSV, Images |
 | **6** | **Automated Tests** | [`docs/test_results.md`](./docs/test_results.md) & [`backend/tests/`](./backend/tests/) | 38 passed tests, 72% coverage (`make test`) |
 | **7** | **Evaluation Report** | [`evaluation/report.md`](./evaluation/report.md) | 15 benchmark docs, 100% success rate, 0.91s latency |
-| **8** | **Recorded Walkthrough** | [`docs/walkthrough.md`](./docs/walkthrough.md) | Minute-by-minute Loom/video demonstration guide |
+| **8** | **Recorded Walkthrough** | [`docs/walkthrough.md`](./docs/walkthrough.md) · [Watch the video](https://drive.google.com/file/d/1ydKOY617EEUGpzvoK7AmOoFbjuO06ZZY/view?usp=drive_link) | Minute-by-minute Loom/video demonstration guide |
 | **9** | **AI Prompts & Disclosure** | [`docs/ai_disclosure.md`](./docs/ai_disclosure.md) & [`PROMPT.md`](./PROMPT.md) | Prompts, grounding, and engineering disclosure |
 
 ---
