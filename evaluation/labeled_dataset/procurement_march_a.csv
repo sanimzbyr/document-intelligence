@@ -1,0 +1,2 @@
+invoice_number,supplier_name,invoice_date,customer_name,subtotal,tax,total,currency
+INV-2026-010,Precision Tools Inc,2026-03-12,Nexus Dynamics LLC,640.0,64.0,704.0,USD

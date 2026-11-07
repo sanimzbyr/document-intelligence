@@ -1,0 +1,152 @@
+{
+  "inv_acme_cloud.pdf": {
+    "invoice_number": "INV-2026-001",
+    "invoice_date": "2026-01-15",
+    "supplier_name": "Acme Cloud Corp",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 1200.0,
+    "tax": 120.0,
+    "total": 1320.0,
+    "currency": "USD"
+  },
+  "inv_starlight_logistics.pdf": {
+    "invoice_number": "INV-2026-002",
+    "invoice_date": "2026-01-20",
+    "supplier_name": "Starlight Logistics",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 2450.0,
+    "tax": 245.0,
+    "total": 2695.0,
+    "currency": "USD"
+  },
+  "inv_nordic_systems.pdf": {
+    "invoice_number": "INV-2026-003",
+    "invoice_date": "2026-01-28",
+    "supplier_name": "Nordic Systems AG",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 3100.0,
+    "tax": 310.0,
+    "total": 3410.0,
+    "currency": "EUR"
+  },
+  "inv_zenith_telecom.pdf": {
+    "invoice_number": "INV-2026-004",
+    "invoice_date": "2026-02-05",
+    "supplier_name": "Zenith Telecom",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 450.0,
+    "tax": 45.0,
+    "total": 495.0,
+    "currency": "USD"
+  },
+  "inv_apex_supplies.pdf": {
+    "invoice_number": "INV-2026-005",
+    "invoice_date": "2026-02-12",
+    "supplier_name": "Apex Office Supplies",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 820.0,
+    "tax": 82.0,
+    "total": 902.0,
+    "currency": "USD"
+  },
+  "inv_vertex_energy.pdf": {
+    "invoice_number": "INV-2026-006",
+    "invoice_date": "2026-02-18",
+    "supplier_name": "Vertex Power Corp",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 1750.0,
+    "tax": 175.0,
+    "total": 1925.0,
+    "currency": "USD"
+  },
+  "ledger_hardware_q1.xlsx": {
+    "invoice_number": "INV-2026-007",
+    "invoice_date": "2026-02-22",
+    "supplier_name": "Silicon Global Components",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 4200.0,
+    "tax": 420.0,
+    "total": 4620.0,
+    "currency": "USD"
+  },
+  "ledger_security_q1.xlsx": {
+    "invoice_number": "INV-2026-008",
+    "invoice_date": "2026-03-01",
+    "supplier_name": "CyberShield Defense",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 5500.0,
+    "tax": 550.0,
+    "total": 6050.0,
+    "currency": "USD"
+  },
+  "ledger_facility_q1.xlsx": {
+    "invoice_number": "INV-2026-009",
+    "invoice_date": "2026-03-08",
+    "supplier_name": "Metro Facilities Group",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 980.0,
+    "tax": 98.0,
+    "total": 1078.0,
+    "currency": "USD"
+  },
+  "procurement_march_a.csv": {
+    "invoice_number": "INV-2026-010",
+    "invoice_date": "2026-03-12",
+    "supplier_name": "Precision Tools Inc",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 640.0,
+    "tax": 64.0,
+    "total": 704.0,
+    "currency": "USD"
+  },
+  "procurement_march_b.csv": {
+    "invoice_number": "INV-2026-011",
+    "invoice_date": "2026-03-16",
+    "supplier_name": "Atlas Freight Partners",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 1350.0,
+    "tax": 135.0,
+    "total": 1485.0,
+    "currency": "USD"
+  },
+  "procurement_march_c.csv": {
+    "invoice_number": "INV-2026-012",
+    "invoice_date": "2026-03-20",
+    "supplier_name": "Vanguard Media Group",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 2100.0,
+    "tax": 210.0,
+    "total": 2310.0,
+    "currency": "USD"
+  },
+  "receipt_fuel_express.png": {
+    "invoice_number": "REC-8841",
+    "invoice_date": "2026-03-22",
+    "supplier_name": "Speedway Fuel Express",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 85.0,
+    "tax": 8.5,
+    "total": 93.5,
+    "currency": "USD"
+  },
+  "receipt_hotel_stay.png": {
+    "invoice_number": "REC-8842",
+    "invoice_date": "2026-03-25",
+    "supplier_name": "Grand Horizon Suites",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 320.0,
+    "tax": 32.0,
+    "total": 352.0,
+    "currency": "USD"
+  },
+  "receipt_courier.png": {
+    "invoice_number": "REC-8843",
+    "invoice_date": "2026-03-28",
+    "supplier_name": "SwiftLine Couriers",
+    "customer_name": "Nexus Dynamics LLC",
+    "subtotal": 140.0,
+    "tax": 14.0,
+    "total": 154.0,
+    "currency": "USD"
+  }
+}

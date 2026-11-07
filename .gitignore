@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+*.egg-info/
+dist/
+build/
+
+# Node & Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Storage & Database
+storage/*.pdf
+storage/*.png
+storage/*.jpg
+storage/*.xlsx
+storage/*.csv
+storage/*.db
+storage/app.db
+*.sqlite3
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db

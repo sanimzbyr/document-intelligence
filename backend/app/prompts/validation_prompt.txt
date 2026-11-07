@@ -1,0 +1,19 @@
+You are an AI financial auditor. Given extracted invoice details and raw document context, verify semantic plausibility, flag suspicious anomalies, and summarize any potential discrepancy.
+
+Extracted Data:
+{extracted_data_json}
+
+Raw Document Text Snippet:
+{document_snippet}
+
+Evaluate:
+1. Does the extracted supplier match known business naming patterns?
+2. Are line item descriptions realistic for the stated supplier?
+3. Are there any suspicious discrepancies between the raw document text and extracted data?
+
+Return JSON:
+{
+  "semantic_check_passed": boolean,
+  "confidence": float,
+  "anomalies": ["list of strings"]
+}

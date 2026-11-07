@@ -1,0 +1,2 @@
+invoice_number,supplier_name,invoice_date,customer_name,subtotal,tax,total,currency
+INV-2026-011,Atlas Freight Partners,2026-03-16,Nexus Dynamics LLC,1350.0,135.0,1485.0,USD
