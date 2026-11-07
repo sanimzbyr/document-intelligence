@@ -106,7 +106,6 @@ document-intelligence/
 │   ├── architecture.md     # Architecture overview with Mermaid diagram
 │   ├── schema.md           # Database ER diagram & table specifications
 │   ├── decisions.md        # Architectural decisions and trade-offs
-│   ├── walkthrough.md      # Video demo script and walkthrough guide
 │   └── ai_disclosure.md    # Disclosure of AI assistance and prompts
 ├── docker-compose.yml       # Production one-command startup
 ├── Makefile                # Dev, test, eval, and migration tasks
