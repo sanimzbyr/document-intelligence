@@ -87,12 +87,53 @@ app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 @app.get("/health", tags=["Health"])
 async def health_check():
     """System health check endpoint."""
+    provider, api_key, _, model = settings.get_llm_credentials()
+    has_key = bool(api_key and not api_key.startswith("your-") and api_key != "mock-or-real-api-key")
     return {
         "status": "healthy",
         "app_name": settings.APP_NAME,
         "environment": settings.APP_ENV,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "llm": {
+            "provider": provider,
+            "model": model,
+            "configured": has_key
+        }
     }
+
+
+@app.get("/health/llm", tags=["Health"])
+async def llm_health_check():
+    """Live roundtrip ping to verify the configured LLM API provider."""
+    from app.services.extraction_service import extraction_service
+    if not extraction_service.client:
+        return {
+            "status": "not_configured",
+            "provider": extraction_service.provider,
+            "message": "No valid API key detected. Heuristic fallback extractor active."
+        }
+    try:
+        start_t = time.time()
+        resp = await extraction_service.client.chat.completions.create(
+            model=extraction_service.model,
+            messages=[{"role": "user", "content": "Respond with: ok"}],
+            max_tokens=10
+        )
+        latency_ms = round((time.time() - start_t) * 1000, 2)
+        return {
+            "status": "connected",
+            "provider": extraction_service.provider,
+            "model": extraction_service.model,
+            "latency_ms": latency_ms,
+            "llm_response": resp.choices[0].message.content.strip()
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "provider": extraction_service.provider,
+            "model": extraction_service.model,
+            "error": str(e)
+        }
 
 
 @app.get("/", include_in_schema=False)

@@ -106,7 +106,7 @@ class Settings(BaseSettings):
         # Configure defaults for free providers
         if provider == "gemini":
             base_url = base_url or "https://generativelanguage.googleapis.com/v1beta/openai/"
-            model = model or "gemini-1.5-flash"
+            model = model or "gemini-flash-lite-latest"
         elif provider == "groq":
             base_url = base_url or "https://api.groq.com/openai/v1"
             model = model or "llama-3.3-70b-versatile"
@@ -124,7 +124,11 @@ class Settings(BaseSettings):
         return provider, api_key, base_url, model
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", ".env"),
+            os.path.join(os.path.dirname(__file__), "..", "..", ".env"),
+            ".env"
+        ],
         env_file_encoding="utf-8",
         extra="ignore"
     )

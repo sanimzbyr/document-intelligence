@@ -34,3 +34,4 @@ storage/app.db
 # OS
 .DS_Store
 Thumbs.db
+backend/storage/*.pdf

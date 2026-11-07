@@ -26,7 +26,7 @@ class ExtractionService:
         
         # Valid active key check
         if api_key and api_key not in ("mock-or-real-api-key", "your-openai-api-key-here", "your-gemini-api-key-here", "your-groq-api-key-here"):
-            client_kwargs = {"api_key": api_key}
+            client_kwargs = {"api_key": api_key, "timeout": 30.0}
             if base_url:
                 client_kwargs["base_url"] = base_url
             self.client = AsyncOpenAI(**client_kwargs)
