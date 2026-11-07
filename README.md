@@ -42,12 +42,30 @@ Automates extraction of structured financial data from messy business documents 
 | **Backend API** | FastAPI (Python 3.12+), Pydantic v2, SlowAPI Rate Limiting, CORS |
 | **OCR & PDF** | `pdfplumber`, `pypdf`, `pytesseract`, `pdf2image`, `Pillow` |
 | **Spreadsheets** | `pandas`, `openpyxl` |
-| **AI / LLM** | OpenAI API (GPT-4o) with structured outputs & fallback parser |
-| **Database & ORM** | PostgreSQL 15 + `pgvector` (SQLite compatible for standalone dev), SQLAlchemy 2.0 Async |
+| **AI / LLM** | Google Gemini (`gemini-flash-lite-latest`), Groq, OpenRouter, or OpenAI |
+| **Database & ORM** | PostgreSQL 15 + `pgvector` (SQLite fallback for single-node dev), SQLAlchemy 2.0 Async |
 | **Task Queue** | Celery + Redis (with synchronous eager execution mode fallback) |
 | **Auth** | JWT (JSON Web Tokens) with bcrypt password hashing |
 | **Testing** | `pytest`, `pytest-asyncio`, `pytest-cov`, `httpx` |
 | **DevOps** | Docker, Docker Compose, Makefile |
+
+---
+
+## Deliverables & Submission Index
+
+All 9 required deliverables are organized and documented within this repository:
+
+| # | Required Deliverable | Repository Location | Summary |
+| :-: | :--- | :--- | :--- |
+| **1** | **Git Repository** | Root directory (`.git/`, `main` branch) | Clean, atomic commit history |
+| **2** | **README & Setup** | [`README.md`](./README.md) | Docker & local setup, prerequisites |
+| **3** | **Architecture & Schema** | [`docs/architecture.md`](./docs/architecture.md) & [`docs/schema.md`](./docs/schema.md) | Mermaid diagrams, ER specifications |
+| **4** | **Backend & Frontend** | [`backend/`](./backend/) & [`frontend/`](./frontend/) | FastAPI (Port 8000) & Next.js 14 (Port 3000) |
+| **5** | **Multi-Format Pipelines** | [`backend/app/pipelines/`](./backend/app/pipelines/) | PDF (`pdfplumber`/OCR), Excel, CSV, Images |
+| **6** | **Automated Tests** | [`docs/test_results.md`](./docs/test_results.md) & [`backend/tests/`](./backend/tests/) | 38 passed tests, 72% coverage (`make test`) |
+| **7** | **Evaluation Report** | [`evaluation/report.md`](./evaluation/report.md) | 15 benchmark docs, 100% success rate, 0.91s latency |
+| **8** | **Recorded Walkthrough** | [`docs/walkthrough.md`](./docs/walkthrough.md) | Minute-by-minute Loom/video demonstration guide |
+| **9** | **AI Prompts & Disclosure** | [`docs/ai_disclosure.md`](./docs/ai_disclosure.md) & [`PROMPT.md`](./PROMPT.md) | Prompts, grounding, and engineering disclosure |
 
 ---
 
@@ -159,8 +177,23 @@ make test
 ```
 
 **Results:**
-- **35 passed tests** (0 failures).
-- **Coverage: ≥ 70%** across core application modules.
+- **38 passed tests** (0 failures).
+- **Coverage: 72%** across core application modules (meets ≥ 70% requirement).
+- Complete breakdown recorded in [`docs/test_results.md`](./docs/test_results.md).
+
+---
+
+## Free LLM API & Live Diagnostics
+
+Test and verify the configured free LLM provider (Google Gemini or Groq):
+
+```bash
+# Direct diagnostic test
+backend/venv/bin/python scripts/test_llm.py
+
+# Or via HTTP health endpoint
+curl http://localhost:8000/health/llm
+```
 
 ---
 
@@ -172,11 +205,12 @@ Execute the empirical evaluation runner against the 15-document labeled dataset:
 make eval
 ```
 
-Generates `evaluation/report.md` detailing:
+Generates [`evaluation/report.md`](./evaluation/report.md) detailing:
 - **Document Success Rate:** 100.0%
 - **Failure Rate:** 0.0%
-- **Average Latency:** < 0.010s per document
-- **Field-Level Extraction Precision:** Exact and fuzzy normalized matches across entities.
+- **Average Latency:** 0.913s per document
+- **P95 Latency:** 1.365s
+- **Extraction Accuracy:** 80.0% across all evaluated fields on heterogeneous files (100% on digital invoices).
 
 ---
 
