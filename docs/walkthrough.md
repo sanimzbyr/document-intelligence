@@ -150,6 +150,6 @@ Once recorded:
 1. Copy the public share link from Loom / YouTube / Google Drive.
 2. Replace the placeholder link at the top of this document:
    ```markdown
-   > **Demo Video Link:** `https://www.loom.com/share/your-actual-recording-id`
+   > **Video Link:** `[https://www.loom.com/share/your-actual-recording-id](https://drive.google.com/file/d/1ydKOY617EEUGpzvoK7AmOoFbjuO06ZZY/view?usp=drive_link)`
    ```
 3. Commit and push the updated link to your Git repository.
